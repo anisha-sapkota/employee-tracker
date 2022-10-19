@@ -1,0 +1,24 @@
+{
+  "name": "employee-tracker",
+  "version": "1.0.0",
+  "description": "employee tracker application",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anisha-sapkota/employee-tracker.git"
+  },
+  "author": "anisha-sapkota",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/anisha-sapkota/employee-tracker/issues"
+  },
+  "homepage": "https://github.com/anisha-sapkota/employee-tracker#readme",
+  "dependencies": {
+    "console.table": "^0.10.0",
+    "inquirer": "^8.2.4",
+    "mysql2": "^2.3.3"
+  }
+}
