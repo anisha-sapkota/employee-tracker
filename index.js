@@ -33,8 +33,22 @@ const getAll = async (type) => {
     query =
       'SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name as department, role.salary, concat(manager.first_name, " ", manager.last_name) AS manager FROM employee JOIN role ON employee.role_id=role.id LEFT JOIN department ON role.department_id=department.id LEFT JOIN employee AS manager ON employee.manager_id=manager.id;';
   }
-  const [rows] = await db.execute(query);
+  const [rows] = await db.query(query);
   console.table(rows);
+};
+
+const addDepartment = async () => {
+  const response = await inquirer.prompt([
+    {
+      type: "input",
+      message: "What is the name of the department?",
+      name: "department",
+    },
+  ]);
+  const department = response.department;
+  const query = "INSERT INTO department (name) VALUES (?)";
+  await db.query(query, department);
+  console.log(`Added ${department} department to the database`);
 };
 
 const init = async () => {
@@ -64,6 +78,9 @@ const init = async () => {
         break;
       case "View All Employees":
         await getAll("employee");
+        break;
+      case "Add Department":
+        await addDepartment();
         break;
       default:
         break;
