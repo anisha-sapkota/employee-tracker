@@ -2,24 +2,6 @@ const mysql = require("mysql2/promise");
 const inquirer = require("inquirer");
 const cTable = require("console.table");
 
-const questions = [
-  {
-    type: "list",
-    message: "What would you like to do?",
-    name: "choice",
-    choices: [
-      "View All Employees",
-      "Add Employee",
-      "Update Employee Role",
-      "View All Roles",
-      "Add Role",
-      "View All Departments",
-      "Add Department",
-      "Quit",
-    ],
-  },
-];
-
 let db;
 
 const getAll = async (type) => {
@@ -30,7 +12,7 @@ const getAll = async (type) => {
     query =
       "SELECT role.id, role.title, department.name AS department, role.salary \
       FROM role \
-      JOIN department ON role.department_id=department.id ORDER BY role.id;";
+      JOIN department ON role.department_id=department.id ORDER BY role.id";
   } else {
     query =
       'SELECT employee.id, employee.first_name, employee.last_name, role.title, \
@@ -197,17 +179,14 @@ const updateEmployeeRole = async () => {
     },
   ]);
 
-  const query =
-    "UPDATE employee SET role_id = ? WHERE id = ?";
+  const query = "UPDATE employee SET role_id = ? WHERE id = ?";
 
   await db.query(query, [
     rolesMap[response.role],
     employeesMap[response.employee],
   ]);
 
-  console.log(
-    `Updated ${response.employee}'s role`
-  );
+  console.log(`Updated ${response.employee}'s role`);
 };
 
 const init = async () => {
@@ -223,7 +202,24 @@ const init = async () => {
   let loop = true;
 
   while (loop) {
-    const response = await inquirer.prompt(questions);
+    const response = await inquirer.prompt([
+      {
+        type: "list",
+        message: "What would you like to do?",
+        name: "choice",
+        choices: [
+          "View All Employees",
+          "Add Employee",
+          "Update Employee Role",
+          "View All Roles",
+          "Add Role",
+          "View All Departments",
+          "Add Department",
+          "Quit",
+        ],
+      },
+    ]);
+
     switch (response.choice) {
       case "Quit":
         await db.end();
@@ -247,9 +243,9 @@ const init = async () => {
       case "Add Employee":
         await addEmployee();
         break;
-        case "Update Employee Role":
-          await updateEmployeeRole();
-          break;
+      case "Update Employee Role":
+        await updateEmployeeRole();
+        break;
       default:
         break;
     }
