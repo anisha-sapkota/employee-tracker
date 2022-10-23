@@ -5,6 +5,7 @@ USE organisation_db;
 CREATE TABLE department (
     id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(30),
+    UNIQUE (name),
     PRIMARY KEY (id)
 );
 

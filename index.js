@@ -51,6 +51,53 @@ const addDepartment = async () => {
   console.log(`Added ${department} department to the database`);
 };
 
+const addRole = async () => {
+  const [data] = await db.query("SELECT * FROM department");
+  const departmentsMap = {};
+
+  for (const department of data) {
+    departmentsMap[department.name] = department.id;
+  }
+
+  const response = await inquirer.prompt([
+    {
+      type: "input",
+      message: "What is the name of the role?",
+      name: "role",
+    },
+    {
+      type: "input",
+      message: "What is the salary of the role?",
+      name: "salary",
+      validate: (salary) => {
+        const valid = /^\d+$/.test(salary);
+        if (valid) {
+          return true;
+        } else {
+          return "Please enter a valid salary";
+        }
+      },
+    },
+    {
+      type: "list",
+      message: "Which department does the role belong to?",
+      name: "department",
+      choices: Object.keys(departmentsMap),
+    },
+  ]);
+
+  const query =
+    "INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)";
+
+  await db.query(query, [
+    response.role,
+    response.salary,
+    departmentsMap[response.department],
+  ]);
+
+  console.log(`Added ${response.role} role to the database`);
+};
+
 const init = async () => {
   db = await mysql.createConnection({
     host: "localhost",
@@ -81,6 +128,9 @@ const init = async () => {
         break;
       case "Add Department":
         await addDepartment();
+        break;
+      case "Add Role":
+        await addRole();
         break;
       default:
         break;
