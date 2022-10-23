@@ -28,10 +28,18 @@ const getAll = async (type) => {
     query = "SELECT * FROM department;";
   } else if (type === "role") {
     query =
-      "SELECT role.id, role.title, department.name as department, role.salary FROM role JOIN department ON role.department_id=department.id ORDER BY role.id;";
+      "SELECT role.id, role.title, department.name AS department, role.salary \
+      FROM role \
+      JOIN department ON role.department_id=department.id ORDER BY role.id;";
   } else {
     query =
-      'SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name as department, role.salary, concat(manager.first_name, " ", manager.last_name) AS manager FROM employee JOIN role ON employee.role_id=role.id LEFT JOIN department ON role.department_id=department.id LEFT JOIN employee AS manager ON employee.manager_id=manager.id;';
+      'SELECT employee.id, employee.first_name, employee.last_name, role.title, \
+      department.name AS department, role.salary, CONCAT(manager.first_name, " ", \
+      manager.last_name) AS manager \
+      FROM employee \
+      JOIN role ON employee.role_id=role.id LEFT \
+      JOIN department ON role.department_id=department.id LEFT \
+      JOIN employee AS manager ON employee.manager_id=manager.id';
   }
   const [rows] = await db.query(query);
   console.table(rows);
@@ -98,6 +106,64 @@ const addRole = async () => {
   console.log(`Added ${response.role} role to the database`);
 };
 
+const addEmployee = async () => {
+  const [roles] = await db.query("SELECT id, title FROM role");
+  const rolesMap = {};
+
+  for (const role of roles) {
+    rolesMap[role.title] = role.id;
+  }
+
+  const [managers] = await db.query(
+    'SELECT id, CONCAT(first_name, " ", last_name) AS name \
+    FROM employee where manager_id is NULL'
+  );
+  const managersMap = { None: null };
+
+  for (const manager of managers) {
+    managersMap[manager.name] = manager.id;
+  }
+
+  const response = await inquirer.prompt([
+    {
+      type: "input",
+      message: "What is the employee's first name?",
+      name: "firstName",
+    },
+    {
+      type: "input",
+      message: "What is the employee's last name?",
+      name: "lastName",
+    },
+    {
+      type: "list",
+      message: "What is the employee's role?",
+      name: "role",
+      choices: Object.keys(rolesMap),
+    },
+    {
+      type: "list",
+      message: "Who is the employee's manager?",
+      name: "manager",
+      choices: Object.keys(managersMap),
+    },
+  ]);
+
+  const query =
+    "INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)";
+
+  await db.query(query, [
+    response.firstName,
+    response.lastName,
+    rolesMap[response.role],
+    managersMap[response.manager],
+  ]);
+
+  console.log(
+    `Added ${response.firstName} ${response.lastName} to the database`
+  );
+};
+
 const init = async () => {
   db = await mysql.createConnection({
     host: "localhost",
@@ -131,6 +197,9 @@ const init = async () => {
         break;
       case "Add Role":
         await addRole();
+        break;
+      case "Add Employee":
+        await addEmployee();
         break;
       default:
         break;
