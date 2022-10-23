@@ -146,6 +146,32 @@ const addEmployee = async () => {
   );
 };
 
+const deleteEmployee = async () => {
+  const [employees] = await db.query(
+    'SELECT id, CONCAT(first_name, " ", last_name) AS name \
+    FROM employee'
+  );
+  const employeesMap = {};
+
+  for (const employee of employees) {
+    employeesMap[employee.name] = employee.id;
+  }
+
+  const response = await inquirer.prompt([
+    {
+      type: "list",
+      message: "Which employee do you want to delete?",
+      name: "name",
+      choices: Object.keys(employeesMap),
+    }
+  ]);
+
+  const query = "DELETE FROM employee WHERE id = ?"
+  await db.query(query, employeesMap[response.name])
+
+  console.log(`${response.name} has been removed from database`);
+}
+
 const updateEmployeeRole = async () => {
   const [roles] = await db.query("SELECT id, title FROM role");
   const rolesMap = {};
@@ -210,6 +236,7 @@ const init = async () => {
         choices: [
           "View All Employees",
           "Add Employee",
+          "Delete Employee",
           "Update Employee Role",
           "View All Roles",
           "Add Role",
@@ -242,6 +269,9 @@ const init = async () => {
         break;
       case "Add Employee":
         await addEmployee();
+        break;
+        case "Delete Employee":
+        await deleteEmployee();
         break;
       case "Update Employee Role":
         await updateEmployeeRole();
