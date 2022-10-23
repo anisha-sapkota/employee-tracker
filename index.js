@@ -164,6 +164,52 @@ const addEmployee = async () => {
   );
 };
 
+const updateEmployeeRole = async () => {
+  const [roles] = await db.query("SELECT id, title FROM role");
+  const rolesMap = {};
+
+  for (const role of roles) {
+    rolesMap[role.title] = role.id;
+  }
+
+  const [employees] = await db.query(
+    'SELECT id, CONCAT(first_name, " ", last_name) AS name \
+    FROM employee'
+  );
+  const employeesMap = {};
+
+  for (const employee of employees) {
+    employeesMap[employee.name] = employee.id;
+  }
+
+  const response = await inquirer.prompt([
+    {
+      type: "list",
+      message: "Which employee's role do you want to update?",
+      name: "employee",
+      choices: Object.keys(employeesMap),
+    },
+    {
+      type: "list",
+      message: "Which role do you want to assign the selected employee?",
+      name: "role",
+      choices: Object.keys(rolesMap),
+    },
+  ]);
+
+  const query =
+    "UPDATE employee SET role_id = ? WHERE id = ?";
+
+  await db.query(query, [
+    rolesMap[response.role],
+    employeesMap[response.employee],
+  ]);
+
+  console.log(
+    `Updated ${response.employee}'s role`
+  );
+};
+
 const init = async () => {
   db = await mysql.createConnection({
     host: "localhost",
@@ -201,6 +247,9 @@ const init = async () => {
       case "Add Employee":
         await addEmployee();
         break;
+        case "Update Employee Role":
+          await updateEmployeeRole();
+          break;
       default:
         break;
     }
