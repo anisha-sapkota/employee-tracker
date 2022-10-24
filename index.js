@@ -40,7 +40,7 @@ const getEmployeesByManager = async () => {
   const response = await inquirer.prompt([
     {
       type: "list",
-      message: "View employees by which manager?",
+      message: "View employees for which manager?",
       name: "manager",
       choices: Object.keys(managersMap),
     },
@@ -48,6 +48,35 @@ const getEmployeesByManager = async () => {
   const query =
     "SELECT id, first_name, last_name FROM employee WHERE manager_id = ?";
   const [employees] = await db.query(query, managersMap[response.manager]);
+  console.table(employees);
+};
+
+const getEmployeesByDepartment = async () => {
+  const [departments] = await db.query("SELECT * FROM department");
+  const departmentsMap = {};
+
+  for (const department of departments) {
+    departmentsMap[department.name] = department.id;
+  }
+
+  const response = await inquirer.prompt([
+    {
+      type: "list",
+      message: "View employees for which department?",
+      name: "department",
+      choices: Object.keys(departmentsMap),
+    },
+  ]);
+  const query =
+    "SELECT employee.id, first_name, last_name FROM employee \
+    JOIN role ON employee.role_id = role.id \
+    JOIN department ON role.department_id = department.id \
+    WHERE department.id = ?";
+
+    const [employees] = await db.query(
+    query,
+    departmentsMap[response.department]
+  );
   console.table(employees);
 };
 
@@ -260,6 +289,7 @@ const init = async () => {
         choices: [
           "View All Employees",
           "View Employees By Manager",
+          "View Employees By Department",
           "Add Employee",
           "Delete Employee",
           "Update Employee Role",
@@ -303,6 +333,9 @@ const init = async () => {
         break;
       case "View Employees By Manager":
         await getEmployeesByManager();
+        break;
+        case "View Employees By Department":
+        await getEmployeesByDepartment();
         break;
       default:
         break;
