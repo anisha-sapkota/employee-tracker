@@ -27,6 +27,30 @@ const getAll = async (type) => {
   console.table(rows);
 };
 
+const getEmployeesByManager = async () => {
+  const [managers] = await db.query(
+    'SELECT id, CONCAT(first_name, " ", last_name) AS name FROM employee WHERE manager_id is NULL'
+  );
+  const managersMap = {};
+
+  for (const manager of managers) {
+    managersMap[manager.name] = manager.id;
+  }
+
+  const response = await inquirer.prompt([
+    {
+      type: "list",
+      message: "View employees by which manager?",
+      name: "manager",
+      choices: Object.keys(managersMap),
+    },
+  ]);
+  const query =
+    "SELECT id, first_name, last_name FROM employee WHERE manager_id = ?";
+  const [employees] = await db.query(query, managersMap[response.manager]);
+  console.table(employees);
+};
+
 const addDepartment = async () => {
   const response = await inquirer.prompt([
     {
@@ -163,14 +187,14 @@ const deleteEmployee = async () => {
       message: "Which employee do you want to delete?",
       name: "name",
       choices: Object.keys(employeesMap),
-    }
+    },
   ]);
 
-  const query = "DELETE FROM employee WHERE id = ?"
-  await db.query(query, employeesMap[response.name])
+  const query = "DELETE FROM employee WHERE id = ?";
+  await db.query(query, employeesMap[response.name]);
 
   console.log(`${response.name} has been removed from database`);
-}
+};
 
 const updateEmployeeRole = async () => {
   const [roles] = await db.query("SELECT id, title FROM role");
@@ -235,6 +259,7 @@ const init = async () => {
         name: "choice",
         choices: [
           "View All Employees",
+          "View Employees By Manager",
           "Add Employee",
           "Delete Employee",
           "Update Employee Role",
@@ -270,11 +295,14 @@ const init = async () => {
       case "Add Employee":
         await addEmployee();
         break;
-        case "Delete Employee":
+      case "Delete Employee":
         await deleteEmployee();
         break;
       case "Update Employee Role":
         await updateEmployeeRole();
+        break;
+      case "View Employees By Manager":
+        await getEmployeesByManager();
         break;
       default:
         break;
