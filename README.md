@@ -35,6 +35,8 @@ The following operations are supported:
 - Delete Department
 - View Budget by Department
 
+View live demo [here](https://watch.screencastify.com/v/ckwdFMT05DYO7Gr0KSdk).
+
 ## Libraries used
 
 - [console.table](https://www.npmjs.com/package/console.table)
