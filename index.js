@@ -1,11 +1,14 @@
+// import required libraries
 const mysql = require("mysql2/promise");
 const inquirer = require("inquirer");
 const cTable = require("console.table");
 
 let db;
 
+// function for getting all of type - department, role, employee
 const getAll = async (type) => {
   let query;
+  // define query based on type
   if (type === "department") {
     query = "SELECT * FROM department;";
   } else if (type === "role") {
@@ -16,18 +19,22 @@ const getAll = async (type) => {
   } else {
     query =
       'SELECT employee.id, employee.first_name, employee.last_name, role.title, \
-      department.name AS department, role.salary, CONCAT(manager.first_name, " ", \
-      manager.last_name) AS manager \
+      department.name AS department, role.salary, \
+      CONCAT(manager.first_name, " ", manager.last_name) AS manager \
       FROM employee \
-      JOIN role ON employee.role_id=role.id LEFT \
-      JOIN department ON role.department_id=department.id LEFT \
-      JOIN employee AS manager ON employee.manager_id=manager.id';
+      LEFT JOIN role ON employee.role_id=role.id \
+      LEFT JOIN department ON role.department_id=department.id \
+      LEFT JOIN employee AS manager ON employee.manager_id=manager.id';
   }
+
+  // run query and print result
   const [rows] = await db.query(query);
   console.table(rows);
 };
 
+// function for getting employees by manager
 const getEmployeesByManager = async () => {
+  // get managers from employee table
   const [managers] = await db.query(
     'SELECT id, CONCAT(first_name, " ", last_name) AS name FROM employee WHERE manager_id is NULL'
   );
@@ -45,13 +52,19 @@ const getEmployeesByManager = async () => {
       choices: Object.keys(managersMap),
     },
   ]);
+
+  // filter employees by manager_id
   const query =
     "SELECT id, first_name, last_name FROM employee WHERE manager_id = ?";
+
+  // run query and print result
   const [employees] = await db.query(query, managersMap[response.manager]);
   console.table(employees);
 };
 
+// function for getting employees by department
 const getEmployeesByDepartment = async () => {
+  // get departments
   const [departments] = await db.query("SELECT * FROM department");
   const departmentsMap = {};
 
@@ -67,12 +80,15 @@ const getEmployeesByDepartment = async () => {
       choices: Object.keys(departmentsMap),
     },
   ]);
+
+  // filter employees by department
   const query =
     "SELECT employee.id, first_name, last_name FROM employee \
-    JOIN role ON employee.role_id = role.id \
-    JOIN department ON role.department_id = department.id \
+    LEFT JOIN role ON employee.role_id = role.id \
+    LEFT JOIN department ON role.department_id = department.id \
     WHERE department.id = ?";
 
+  // run query and print result
   const [employees] = await db.query(
     query,
     departmentsMap[response.department]
@@ -80,7 +96,9 @@ const getEmployeesByDepartment = async () => {
   console.table(employees);
 };
 
+// function for getting budget by department
 const getBudgetByDepartment = async () => {
+  // get departments
   const [departments] = await db.query("SELECT * FROM department");
   const departmentsMap = {};
 
@@ -96,16 +114,20 @@ const getBudgetByDepartment = async () => {
       choices: Object.keys(departmentsMap),
     },
   ]);
+
+  // filter roles by department and sum salary
   const query =
     "SELECT department.name AS department, SUM(role.salary) AS budget \
    FROM employee JOIN role ON employee.role_id = role.id \
-   JOIN department ON role.department_id = department.id \
+   LEFT JOIN department ON role.department_id = department.id \
    WHERE department.id = ?";
 
+  // run query and print result
   const [budget] = await db.query(query, departmentsMap[response.department]);
   console.table(budget);
 };
 
+// function for adding department
 const addDepartment = async () => {
   const response = await inquirer.prompt([
     {
@@ -120,6 +142,7 @@ const addDepartment = async () => {
   console.log(`Added ${department} department to the database`);
 };
 
+// function for adding role
 const addRole = async () => {
   const [data] = await db.query("SELECT * FROM department");
   const departmentsMap = {};
@@ -138,6 +161,7 @@ const addRole = async () => {
       type: "input",
       message: "What is the salary of the role?",
       name: "salary",
+      // function for validating salary is number
       validate: (salary) => {
         const valid = /^\d+$/.test(salary);
         if (valid) {
@@ -167,6 +191,7 @@ const addRole = async () => {
   console.log(`Added ${response.role} role to the database`);
 };
 
+// function for adding employee
 const addEmployee = async () => {
   const [roles] = await db.query("SELECT id, title FROM role");
   const rolesMap = {};
@@ -225,6 +250,7 @@ const addEmployee = async () => {
   );
 };
 
+// function for deleting employee
 const deleteEmployee = async () => {
   const [employees] = await db.query(
     'SELECT id, CONCAT(first_name, " ", last_name) AS name \
@@ -251,6 +277,7 @@ const deleteEmployee = async () => {
   console.log(`${response.name} has been removed from database`);
 };
 
+// function for deleting department
 const deleteDepartment = async () => {
   const [departments] = await db.query("SELECT * FROM department");
   const departmentsMap = {};
@@ -274,6 +301,7 @@ const deleteDepartment = async () => {
   console.log(`${response.name} department has been removed from database`);
 };
 
+// function for deleting role
 const deleteRole = async () => {
   const [roles] = await db.query("SELECT id, title FROM role");
   const rolesMap = {};
@@ -297,6 +325,7 @@ const deleteRole = async () => {
   console.log(`${response.title} role has been removed from database`);
 };
 
+// function for updating employee role
 const updateEmployeeRole = async () => {
   const [roles] = await db.query("SELECT id, title FROM role");
   const rolesMap = {};
@@ -340,6 +369,55 @@ const updateEmployeeRole = async () => {
   console.log(`Updated ${response.employee}'s role`);
 };
 
+// function for updating employee manager
+const updateEmployeeManager = async () => {
+  const [managers] = await db.query(
+    'SELECT id, CONCAT(first_name, " ", last_name) AS name \
+    FROM employee WHERE manager_id IS NULL'
+  );
+  const managersMap = {};
+
+  for (const manager of managers) {
+    managersMap[manager.name] = manager.id;
+  }
+
+  const [employees] = await db.query(
+    'SELECT id, CONCAT(first_name, " ", last_name) AS name \
+    FROM employee \
+    WHERE manager_id IS NOT NULL'
+  );
+  const employeesMap = {};
+
+  for (const employee of employees) {
+    employeesMap[employee.name] = employee.id;
+  }
+
+  const response = await inquirer.prompt([
+    {
+      type: "list",
+      message: "Which employee's manager do you want to update?",
+      name: "employee",
+      choices: Object.keys(employeesMap),
+    },
+    {
+      type: "list",
+      message: "Which manager do you want to assign the selected employee?",
+      name: "manager",
+      choices: Object.keys(managersMap),
+    },
+  ]);
+
+  const query = "UPDATE employee SET manager_id = ? WHERE id = ?";
+
+  await db.query(query, [
+    managersMap[response.manager],
+    employeesMap[response.employee],
+  ]);
+
+  console.log(`Updated ${response.employee}'s manager`);
+};
+
+// initialize app
 const init = async () => {
   db = await mysql.createConnection({
     host: "localhost",
@@ -363,6 +441,7 @@ const init = async () => {
           "View Employees By Manager",
           "View Employees By Department",
           "Add Employee",
+          "Update Employee Manager",
           "Update Employee Role",
           "Delete Employee",
           "View All Roles",
@@ -420,6 +499,9 @@ const init = async () => {
         break;
       case "Delete Role":
         await deleteRole();
+        break;
+      case "Update Employee Manager":
+        await updateEmployeeManager();
         break;
       default:
         break;
