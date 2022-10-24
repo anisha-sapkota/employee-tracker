@@ -73,11 +73,37 @@ const getEmployeesByDepartment = async () => {
     JOIN department ON role.department_id = department.id \
     WHERE department.id = ?";
 
-    const [employees] = await db.query(
+  const [employees] = await db.query(
     query,
     departmentsMap[response.department]
   );
   console.table(employees);
+};
+
+const getBudgetByDepartment = async () => {
+  const [departments] = await db.query("SELECT * FROM department");
+  const departmentsMap = {};
+
+  for (const department of departments) {
+    departmentsMap[department.name] = department.id;
+  }
+
+  const response = await inquirer.prompt([
+    {
+      type: "list",
+      message: "View budget for department?",
+      name: "department",
+      choices: Object.keys(departmentsMap),
+    },
+  ]);
+  const query =
+    "SELECT department.name AS department, SUM(role.salary) AS budget \
+   FROM employee JOIN role ON employee.role_id = role.id \
+   JOIN department ON role.department_id = department.id \
+   WHERE department.id = ?";
+
+  const [budget] = await db.query(query, departmentsMap[response.department]);
+  console.table(budget);
 };
 
 const addDepartment = async () => {
@@ -225,6 +251,52 @@ const deleteEmployee = async () => {
   console.log(`${response.name} has been removed from database`);
 };
 
+const deleteDepartment = async () => {
+  const [departments] = await db.query("SELECT * FROM department");
+  const departmentsMap = {};
+
+  for (const department of departments) {
+    departmentsMap[department.name] = department.id;
+  }
+
+  const response = await inquirer.prompt([
+    {
+      type: "list",
+      message: "Which department do you want to delete?",
+      name: "name",
+      choices: Object.keys(departmentsMap),
+    },
+  ]);
+
+  const query = "DELETE FROM department WHERE id = ?";
+  await db.query(query, departmentsMap[response.name]);
+
+  console.log(`${response.name} department has been removed from database`);
+};
+
+const deleteRole = async () => {
+  const [roles] = await db.query("SELECT id, title FROM role");
+  const rolesMap = {};
+
+  for (const role of roles) {
+    rolesMap[role.title] = role.id;
+  }
+
+  const response = await inquirer.prompt([
+    {
+      type: "list",
+      message: "Which role do you want to delete?",
+      name: "title",
+      choices: Object.keys(rolesMap),
+    },
+  ]);
+
+  const query = "DELETE FROM role WHERE id = ?";
+  await db.query(query, rolesMap[response.title]);
+
+  console.log(`${response.title} role has been removed from database`);
+};
+
 const updateEmployeeRole = async () => {
   const [roles] = await db.query("SELECT id, title FROM role");
   const rolesMap = {};
@@ -291,12 +363,15 @@ const init = async () => {
           "View Employees By Manager",
           "View Employees By Department",
           "Add Employee",
-          "Delete Employee",
           "Update Employee Role",
+          "Delete Employee",
           "View All Roles",
           "Add Role",
+          "Delete Role",
           "View All Departments",
           "Add Department",
+          "Delete Department",
+          "View Budget by Department",
           "Quit",
         ],
       },
@@ -334,8 +409,17 @@ const init = async () => {
       case "View Employees By Manager":
         await getEmployeesByManager();
         break;
-        case "View Employees By Department":
+      case "View Employees By Department":
         await getEmployeesByDepartment();
+        break;
+      case "View Budget by Department":
+        await getBudgetByDepartment();
+        break;
+      case "Delete Department":
+        await deleteDepartment();
+        break;
+      case "Delete Role":
+        await deleteRole();
         break;
       default:
         break;
